@@ -1,0 +1,83 @@
+{
+  "name": "caps-lock-state",
+  "displayName": "Caps Lock State",
+  "description": "This is a Visual Studio Code plugin that provides panels to display the Caps Lock key's status.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.84.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "caps-lock-config",
+        "title": "caps lock config"
+      }
+    ],
+    "configuration": {
+      "title": "Caps Lock State",
+      "properties": {
+        "caps-lock-state.choose_display_method": {
+        "type": "string",
+        "default": "method_background_color",
+        "enum": ["method_background_color", "method_status_bar", "method_cursor_text", "method_gutter_icon"],
+        "description": "Choose the display method for caps lock state."
+        },
+        "caps-lock-state.cursor_text": {
+          "type": "string",
+          "default": "🔒",
+          "description": "Set the text displayed before the cursor."
+        },
+        "caps-lock-state.cursor_text_color": {
+          "type": "string",
+          "default": "red",
+          "description": "Set text color displayed before the cursor."
+        },
+        "caps-lock-state.status_bar_text": {
+          "type": "string",
+          "default": "🔒 Caps Lock ON!",
+          "description": "Set the text displayed in the status bar."
+        },
+        "caps-lock-state.line_background_color": {
+            "type": "string",
+            "default": "rgba(255, 0, 0, 0.7)",
+            "description": "Set the background color of the line."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.3",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.84.0",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "@typescript-eslint/parser": "^6.9.0",
+    "@vscode/test-electron": "^2.3.6",
+    "eslint": "^8.52.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "ts-loader": "^9.5.0",
+    "typescript": "^5.2.2",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "ps-list": "^8.1.1"
+  }
+}
