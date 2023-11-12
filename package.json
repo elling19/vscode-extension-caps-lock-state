@@ -2,6 +2,13 @@
   "name": "caps-lock-state",
   "displayName": "Caps Lock State",
   "description": "This is a Visual Studio Code plugin that provides panels to display the Caps Lock key's status.",
+  "icon": "./caps.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elling19/vscode-extension-caps-lock-state.git"
+  },
+  "publisher": "Elling",
+
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.84.0"
