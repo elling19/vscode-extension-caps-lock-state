@@ -26,9 +26,9 @@ export function activate(context: vscode.ExtensionContext) {
 	let capsLockState = 0;
 	const extensionPath = context.extensionPath;
 	const executablePath = path.join(extensionPath, 'caps_lock_listener.exe');
-	vscode.window.showInformationMessage("executablePath: " + executablePath);
 	const child = spawn(executablePath, []);
 	child.stdout.on('data', (data) => {
+		vscode.window.showInformationMessage("load caps lock state success.");
 		capsLockState = parseInt(data.toString().trim());
 		console.log(`Caps Lock State: ${capsLockState}`);
 		if (capsLockState === 1) {

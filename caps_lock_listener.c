@@ -55,6 +55,12 @@ int main()
             print_caps_lock_state(new_state);
             current_state = new_state;
         }
+        // sleep 500ms
+#ifdef _WIN32
+        Sleep(500);
+#else
+        usleep(500000);
+#endif
     }
     return 0;
 }
