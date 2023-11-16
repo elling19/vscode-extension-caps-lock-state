@@ -25,7 +25,13 @@ export function activate(context: vscode.ExtensionContext) {
 	// get caps lock state from caps_lock_listener executable file.
 	let capsLockState = 0;
 	const extensionPath = context.extensionPath;
-	const executablePath = path.join(extensionPath, 'caps_lock_listener.exe');
+	let executablePath;
+	if (process.platform === 'win32') {
+		executablePath = path.join(extensionPath, 'caps_lock_listener.exe');
+	} else {
+		// todo: fix linux environment
+		executablePath = path.join(extensionPath, 'caps_lock_listener');
+	}
 	const child = spawn(executablePath, []);
 	child.stdout.on('data', (data) => {
 		capsLockState = parseInt(data.toString().trim());
