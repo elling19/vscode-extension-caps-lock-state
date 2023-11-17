@@ -26,13 +26,18 @@ export function activate(context: vscode.ExtensionContext) {
 	let capsLockState = 0;
 	const extensionPath = context.extensionPath;
 	let executablePath;
+	const args = [];
 	if (process.platform === 'win32') {
 		executablePath = path.join(extensionPath, 'caps_lock_listener.exe');
-	} else {
+	} else if (process.platform === 'darwin') {
+		executablePath = path.join(extensionPath, 'macos_listener');
+		args.push('capslock');
+	}
+	else {
 		// todo: fix linux environment
 		executablePath = path.join(extensionPath, 'caps_lock_listener');
 	}
-	const child = spawn(executablePath, []);
+	const child = spawn(executablePath, args);
 	child.stdout.on('data', (data) => {
 		capsLockState = parseInt(data.toString().trim());
 		console.log(`Caps Lock State: ${capsLockState}`);
