@@ -1,3 +1,5 @@
+[![Nodejs Version](https://img.shields.io/badge/nodejs-20.10.0-green)](https://nodejs.org)
+
 # Caps Lock State (Beta)
 
 <div align="center">

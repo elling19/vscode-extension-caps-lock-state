@@ -44,8 +44,14 @@ int get_caps_lock_state()
     return state;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+    if (argc != 2)
+    {
+        printf("Usage: %s <sleep_duration_ms>\n", argv[0]);
+        return 1;
+    }
+    int sleep_duration_ms = atoi(argv[1]);
     int current_state = get_caps_lock_state();
     while (1)
     {
@@ -57,9 +63,9 @@ int main()
         }
         // sleep 500ms
 #ifdef _WIN32
-        Sleep(500);
+        Sleep(sleep_duration_ms);
 #else
-        usleep(500000);
+        usleep(sleep_duration_ms * 1000);
 #endif
     }
     return 0;

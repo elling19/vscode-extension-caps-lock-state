@@ -8,7 +8,7 @@
         "url": "https://github.com/elling19/vscode-extension-caps-lock-state.git"
     },
     "publisher": "Elling",
-    "version": "0.0.4",
+    "version": "0.0.6",
     "engines": {
         "vscode": "^1.84.0"
     },
@@ -29,6 +29,12 @@
         "configuration": {
             "title": "Caps Lock State",
             "properties": {
+                "caps-lock-state.delay_time": {
+                    "type": "integer",
+                    "default": 20,
+                    "description": "Set the delay time for caps lock state changes. (Unit: milliseconds)",
+                    "order": 1
+                },
                 "caps-lock-state.choose_display_method": {
                     "type": "string",
                     "default": "method_background_color",
@@ -38,7 +44,8 @@
                         "method_cursor_text",
                         "method_gutter_icon"
                     ],
-                    "description": "Choose the display method for caps lock state."
+                    "description": "Choose the display method for caps lock state.",
+                    "order": 2
                 },
                 "caps-lock-state.cursor_text": {
                     "type": "string",

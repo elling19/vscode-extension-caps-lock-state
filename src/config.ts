@@ -1,6 +1,7 @@
 
 const extName = "caps-lock-state";
 const configKey = {
+    delay_time: "delay_time",
     choose_display_method: "choose_display_method",
     cursor_text: "cursor_text",
     cursor_text_color: "cursor_text_color",
@@ -8,6 +9,7 @@ const configKey = {
     status_bar_text: "status_bar_text",
 };
 const configDefaultValue = {
+    delay_time: 20,
     choose_display_method: "method_background_color",
     cursor_text: "Caps On",
     cursor_text_color: "red",

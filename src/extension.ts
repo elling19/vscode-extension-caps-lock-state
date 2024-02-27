@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import { spawn } from 'child_process';
-import { extName, configKey } from './config';
+import { extName, configKey, configDefaultValue } from './config';
 import { displayController } from './decoration';
 
 
@@ -10,15 +10,24 @@ export function activate(context: vscode.ExtensionContext) {
 
 	});
 	context.subscriptions.push(disposable);
-	const displayMethod: string = vscode.workspace.getConfiguration().get(`${extName}.${configKey.choose_display_method}`, 'method_background_color');
+	const displayMethod: string = vscode.workspace.getConfiguration().get(`${extName}.${configKey.choose_display_method}`, configDefaultValue.choose_display_method);
 	displayController.addOrUpdateByDisplayMethodName(displayMethod);
+	const delayTime: number = vscode.workspace.getConfiguration().get(`${extName}.${configKey.delay_time}`, configDefaultValue.delay_time);
 	// listen config change
 	vscode.workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration(`${extName}.${configKey.choose_display_method}`)) {
 			const displayMethod: string = vscode.workspace.getConfiguration().get(`${extName}.${configKey.choose_display_method}`, 'method_background_color');
 			displayController.removeAll();
 			displayController.addOrUpdateByDisplayMethodName(displayMethod);
-		} else {
+		} else if (event.affectsConfiguration(`${extName}.${configKey.delay_time}`)) {
+			vscode.window.showInformationMessage('Your changes require a VSCode restart to take effect.', 'Restart').then(choice => {
+                if (choice === 'Restart') {
+                    // restart VSCode
+                    vscode.commands.executeCommand('workbench.action.reloadWindow');
+                }
+            });
+		}
+		else {
 			displayController.updateAll();
 		}
 	});
@@ -29,6 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const args = [];
 	if (process.platform === 'win32') {
 		executablePath = path.join(extensionPath, 'caps_lock_listener.exe');
+		args.push(delayTime.toString());
 	} else if (process.platform === 'darwin') {
 		executablePath = path.join(extensionPath, 'macos_listener');
 		args.push('capslock');
@@ -36,11 +46,11 @@ export function activate(context: vscode.ExtensionContext) {
 	else {
 		// todo: fix linux environment
 		executablePath = path.join(extensionPath, 'caps_lock_listener');
+		args.push(delayTime.toString());
 	}
 	const child = spawn(executablePath, args);
 	child.stdout.on('data', (data) => {
 		capsLockState = parseInt(data.toString().trim());
-		console.log(`Caps Lock State: ${capsLockState}`);
 		if (capsLockState === 1) {
 			displayController.show();
 		} else {
