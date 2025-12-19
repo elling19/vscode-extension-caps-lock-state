@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import { spawn } from 'child_process';
-import { extName, configKey, configDefaultValue } from './config';
+import { extName, configKey, configDefaultValue, setExtensionPath } from './config';
 import { displayController } from './decoration';
 
 
 export function activate(context: vscode.ExtensionContext) {
+	// 初始化扩展路径
+	setExtensionPath(context.extensionPath);
+
 	let disposable = vscode.commands.registerCommand('caps-lock-state', () => {
 
 	});

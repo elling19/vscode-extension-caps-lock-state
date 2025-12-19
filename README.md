@@ -23,26 +23,26 @@ Currently, only tested to work on the Windows platform.
 
 There are four display methods available for selection, and you can check the configuration page for how to switch between them:
 
-   ![Switch different display methods](https://github.com/elling19/vscode-extension-caps-lock-state/blob/master/assets/md_1.gif?raw=true)
+   ![Switch different display methods](https://github.com/elling19/vscode-extension-caps-lock-state/blob/master/docs/md_1.gif?raw=true)
 
 1. **Add character information in front of the cursor.**
    You can modify the character and its color in the configuration file.
 
-   ![Change background color](https://github.com/elling19/vscode-extension-caps-lock-state/blob/master/assets/md_4.gif?raw=true)
+   ![Change background color](https://github.com/elling19/vscode-extension-caps-lock-state/blob/master/docs/md_4.gif?raw=true)
 
 2. **Display characters in the status bar.**
    You can modify the character in the configuration file.
 
-   ![Change background color](https://github.com/elling19/vscode-extension-caps-lock-state/blob/master/assets/md_3.gif?raw=true)
+   ![Change background color](https://github.com/elling19/vscode-extension-caps-lock-state/blob/master/docs/md_3.gif?raw=true)
 
 3. **Modify the background color of the line where the cursor is located.**
    You can modify the background color in the configuration file.
 
-   ![Change background color](https://github.com/elling19/vscode-extension-caps-lock-state/blob/master/assets/md_2.gif?raw=true)
+   ![Change background color](https://github.com/elling19/vscode-extension-caps-lock-state/blob/master/docs/md_2.gif?raw=true)
 
 4. **Add a lock icon background at the line numbers.**
 
-   ![Change background color](https://github.com/elling19/vscode-extension-caps-lock-state/blob/master/assets/md_5.gif?raw=true)
+   ![Change background color](https://github.com/elling19/vscode-extension-caps-lock-state/blob/master/docs/md_5.gif?raw=true)
 
 ## Contributions
 

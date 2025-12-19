@@ -1,4 +1,3 @@
-
 const extName = "caps-lock-state";
 const configKey = {
     delay_time: "delay_time",
@@ -17,4 +16,15 @@ const configDefaultValue = {
     status_bar_text: "🔒 Caps Lock ON!"
 };
 
-export { extName, configKey, configDefaultValue };
+// 存储扩展路径，在 activate 时初始化
+let extensionPath: string = '';
+
+function setExtensionPath(path: string): void {
+    extensionPath = path;
+}
+
+function getExtensionPath(): string {
+    return extensionPath;
+}
+
+export { extName, configKey, configDefaultValue, setExtensionPath, getExtensionPath };

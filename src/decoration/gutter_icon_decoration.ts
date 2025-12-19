@@ -1,13 +1,15 @@
 import * as vscode from 'vscode';
 import path from 'path';
 import { CapsLockDecoration } from "./decoration";
+import { getExtensionPath } from "../config";
 
 class GutterIconDecoration extends CapsLockDecoration {
     buildDecoration(): void {
         if (this.decorationType !== null) {
             this.decorationType.dispose();
         }
-        const iconPath = path.join(__dirname, 'capslock.png');
+        // 使用扩展根目录下的 assets 目录中的图标
+        const iconPath = path.join(getExtensionPath(), 'assets', 'capslock.png');
         this.decorationType = vscode.window.createTextEditorDecorationType({
             gutterIconPath: iconPath,
             gutterIconSize: "20px",

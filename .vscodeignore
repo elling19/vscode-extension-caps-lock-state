@@ -11,3 +11,7 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
+docs/**
+caps_lock_listener.c
+macos_listener.m
+.nvmrc
