@@ -6,7 +6,7 @@
 #include <Windows.h>
 #else
 #include <unistd.h>
-#include <X11/XKBlib.h>
+#include <dirent.h>
 #endif
 
 void print_caps_lock_state(int state)
@@ -19,6 +19,27 @@ void print_caps_lock_state(int state)
     fflush(stdout);
 }
 
+static int has_capslock_led()
+{
+#ifndef _WIN32
+    const char *leds_dir = "/sys/class/leds";
+    DIR *dir = opendir(leds_dir);
+    if (!dir) return 0;
+    struct dirent *ent;
+    while ((ent = readdir(dir)) != NULL) {
+        if (ent->d_name[0] == '.') continue;
+        if (strstr(ent->d_name, "capslock") != NULL) {
+            closedir(dir);
+            return 1;
+        }
+    }
+    closedir(dir);
+    return 0;
+#else
+    return 0;
+#endif
+}
+
 int get_caps_lock_state()
 {
     int state = 0;
@@ -26,19 +47,30 @@ int get_caps_lock_state()
 #ifdef _WIN32
     state = GetKeyState(VK_CAPITAL) & 1;
 #else
-    Display *display = XOpenDisplay(NULL);
-    if (display == NULL)
-    {
-        fprintf(stderr, "Error opening X display\n");
-        exit(EXIT_FAILURE);
+    // Prefer the simpler sysfs method: /sys/class/leds/*::capslock/brightness
+    const char *leds_dir = "/sys/class/leds";
+    DIR *dir = opendir(leds_dir);
+    if (dir) {
+        struct dirent *ent;
+        while ((ent = readdir(dir)) != NULL) {
+            if (ent->d_name[0] == '.') continue;
+            if (strstr(ent->d_name, "capslock") == NULL) continue;
+            char pathbuf[512];
+            snprintf(pathbuf, sizeof(pathbuf), "%s/%s/brightness", leds_dir, ent->d_name);
+            FILE *f = fopen(pathbuf, "r");
+            if (!f) continue;
+            char buf[32] = {0};
+            if (fgets(buf, sizeof(buf), f) != NULL) {
+                state = atoi(buf) != 0;
+                fclose(f);
+                break;
+            }
+            fclose(f);
+        }
+        closedir(dir);
+    } else {
+        state = 0;
     }
-
-    XkbStateRec xkbState;
-    XkbGetState(display, XkbUseCoreKbd, &xkbState);
-
-    state = (xkbState.locked_mods & XkbCapsLockMask) != 0;
-
-    XCloseDisplay(display);
 #endif
 
     return state;
@@ -73,5 +105,5 @@ int main(int argc, char *argv[])
 // window compile command:
 // gcc caps_lock_listener.c -o caps_lock_listener.exe -luser32
 
-// linux compile command: (need X11)
-// gcc caps_lock_listener.c -o caps_lock_listener -lX11
+// linux compile command: (no X11 dependency)
+// gcc caps_lock_listener.c -o caps_lock_listener
