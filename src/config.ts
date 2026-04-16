@@ -6,14 +6,17 @@ const configKey = {
     cursor_text_color: "cursor_text_color",
     line_background_color: "line_background_color",
     status_bar_text: "status_bar_text",
+    cursor_color: "cursor_color",
 };
+
 const configDefaultValue = {
     delay_time: 20,
-    choose_display_method: "method_background_color",
-    cursor_text: "Caps On",
+    choose_display_method: "method_cursor_color",
+    cursor_text: "🔒",
     cursor_text_color: "red",
     line_background_color: "rgba(255,0,0,0.7)",
-    status_bar_text: "🔒 Caps Lock ON!"
+    status_bar_text: "🔒 Caps Lock ON!",
+    cursor_color: "#00ff00",
 };
 
 // 存储扩展路径，在 activate 时初始化
