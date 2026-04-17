@@ -104,6 +104,18 @@ Shows a lock icon in the editor gutter when Caps Lock is ON. No additional param
 }
 ```
 
+## Uninstall
+
+1. Open the Extensions view (`Ctrl+Shift+X`)
+2. Find **Caps Lock State** and click **Uninstall**
+3. If the cursor color looks different from expected, open Command Palette (`Ctrl+Shift+P`) → **Preferences: Open User Settings (JSON)**, and delete the `editorCursor.foreground` line inside `workbench.colorCustomizations`:
+
+```json
+"workbench.colorCustomizations": {
+    "editorCursor.foreground": "#00ff00"  // ← delete this line
+}
+```
+
 ## Contributing
 
 Contributions are welcome! If you find any issues or have suggestions for improvement, please [submit an issue](https://github.com/elling19/vscode-extension-caps-lock-state/issues) or [create a pull request](https://github.com/elling19/vscode-extension-caps-lock-state/pulls).
