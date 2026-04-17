@@ -28,31 +28,25 @@ function ensureExecutablePermission(filePath: string): void {
 	}
 }
 
-/**
- * 启动时移除上次插件写入的 editorCursor 相关设置，确保装饰器初始化时读取到的是用户真实的主题色
- */
-async function cleanupEditorCursorOverride(): Promise<void> {
-	const config = vscode.workspace.getConfiguration();
-	const colorCustomizations = { ...config.get<Record<string, any>>('workbench.colorCustomizations', {}) };
-
-	if ('editorCursor.foreground' in colorCustomizations) {
-		delete colorCustomizations['editorCursor.foreground'];
-		await config.update('workbench.colorCustomizations', colorCustomizations, vscode.ConfigurationTarget.Global);
-	}
-}
-
 export async function activate(context: vscode.ExtensionContext) {
 	// 初始化扩展路径
 	setExtensionPath(context.extensionPath);
 
-	// 在初始化装饰器之前，移除上次插件写入的主题色覆盖
-	await cleanupEditorCursorOverride();
+	// 如果当前不使用 cursor_color 模式，清理可能遗留的透明光标
+	const displayMethod: string = vscode.workspace.getConfiguration().get(`${extName}.${configKey.display_method}`, configDefaultValue.display_method);
+	if (displayMethod !== 'method_cursor_color') {
+		const config = vscode.workspace.getConfiguration();
+		const cc = { ...config.get<Record<string, any>>('workbench.colorCustomizations', {}) };
+		if (cc['editorCursor.foreground'] === '#00000000') {
+			delete cc['editorCursor.foreground'];
+			await config.update('workbench.colorCustomizations', cc, vscode.ConfigurationTarget.Global);
+		}
+	}
 
 	let disposable = vscode.commands.registerCommand('caps-lock-state', () => {
 
 	});
 	context.subscriptions.push(disposable);
-	const displayMethod: string = vscode.workspace.getConfiguration().get(`${extName}.${configKey.display_method}`, configDefaultValue.display_method);
 	displayController.addOrUpdateByDisplayMethodName(displayMethod);
 	const delayTime: number = vscode.workspace.getConfiguration().get(`${extName}.${configKey.delay_time}`, configDefaultValue.delay_time);
 	// listen config change
@@ -69,7 +63,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 }
             });
 		}
-		else {
+		else if (event.affectsConfiguration(extName)) {
 			displayController.updateAll();
 		}
 	});
