@@ -3,11 +3,18 @@ import { CapsLockDecoration } from "./decoration";
 import { extName, configKey, configDefaultValue } from '../config';
 
 class CursorColorDecoration extends CapsLockDecoration {
-    private originalColor: string | undefined = undefined;
+    // 用户原始的 editorCursor.foreground 颜色（从清理后的 colorCustomizations 读取）
+    // null 表示用户未自定义，使用主题默认值
+    private userOriginalColor: string | null = null;
     private isShowing: boolean = false;
 
     buildDecoration(): void {
-        // 无需创建 decorationType，本装饰通过修改 colorCustomizations 实现
+        // 仅在未显示时更新原始颜色，避免读取到插件写入的值
+        if (!this.isShowing) {
+            const config = vscode.workspace.getConfiguration();
+            const colorCustomizations = config.get<Record<string, any>>('workbench.colorCustomizations', {});
+            this.userOriginalColor = colorCustomizations['editorCursor.foreground'] || null;
+        }
     }
 
     showDecoration(): void {
@@ -15,8 +22,8 @@ class CursorColorDecoration extends CapsLockDecoration {
         this.isShowing = true;
 
         const config = vscode.workspace.getConfiguration(extName);
-        const cursorColor = config.get(configKey.cursor_color, configDefaultValue.cursor_color);
-        this.writeCursorColor(cursorColor);
+        const cursorColor = config.get(configKey['editorCursor.foreground'], configDefaultValue['editorCursor.foreground']);
+        this.writeEditorCursorColor(cursorColor);
     }
 
     hideDecoration(): void {
@@ -30,14 +37,9 @@ class CursorColorDecoration extends CapsLockDecoration {
         this.restoreColor();
     }
 
-    private writeCursorColor(color: string | null): void {
+    private writeEditorCursorColor(color: string | null): void {
         const config = vscode.workspace.getConfiguration();
         const colorCustomizations: Record<string, any> = { ...config.get<Record<string, any>>('workbench.colorCustomizations', {}) };
-
-        // 保存用户原有光标颜色（仅一次）
-        if (this.originalColor === undefined) {
-            this.originalColor = colorCustomizations['editorCursor.foreground'] || null;
-        }
 
         if (color) {
             colorCustomizations['editorCursor.foreground'] = color;
@@ -51,7 +53,7 @@ class CursorColorDecoration extends CapsLockDecoration {
     }
 
     private restoreColor(): void {
-        this.writeCursorColor(this.originalColor || null);
+        this.writeEditorCursorColor(this.userOriginalColor);
     }
 }
 
