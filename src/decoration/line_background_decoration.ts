@@ -8,7 +8,7 @@ class LineBackgroundColorDecoration extends CapsLockDecoration {
             this.decorationType.dispose();
         }
         const config = vscode.workspace.getConfiguration(extName);
-        const lineBackgroundColor = config.get(configKey.line_background_color, configDefaultValue.line_background_color);
+        const lineBackgroundColor = config.get(configKey.background_color, configDefaultValue.background_color);
         if (this.decorationType !== null) {
             this.decorationType.dispose();
         }

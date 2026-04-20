@@ -6,68 +6,86 @@
 
 Currently only tested on **Windows**.
 
-## Demo
 
-![Demo](https://raw.githubusercontent.com/elling19/vscode-extension-caps-lock-state/master/docs/md_1.gif)
-
-## Installation
-
-1. Open Visual Studio Code
-2. Open the Extensions view (`Ctrl+Shift+X`)
-3. Search for **Caps Lock State**
-4. Click **Install**
-
----
-
-## Usage
-
-The extension works out of the box — once installed, it automatically changes the editor cursor color when Caps Lock is ON.
-
-### Configuration
+## Configuration
 
 Open **Settings** (`Ctrl+,`) and search for **Caps Lock State** to customize:
 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
-| `caps-lock-state.editorCursor.foreground` | string | `#00ff00` | Cursor foreground color when Caps Lock is ON. Accepts any CSS color value. |
+| `caps-lock-state.display_method` | string | `method_cursor_color` | Choose the display method for Caps Lock state. |
 | `caps-lock-state.delay_time` | integer | `20` | Polling interval for detecting Caps Lock state changes (ms). |
 
-> For other display methods, see [Other Display Methods](LEGACY_SETTINGS.md).
+## Display Methods
 
-#### Example (`settings.json`)
+You can switch display styles by setting `caps-lock-state.display_method` in your `settings.json`.
+
+### 1. Cursor Color (Default)
+
+Changes the editor cursor color when Caps Lock is ON.
+
+![Cursor Color](https://raw.githubusercontent.com/elling19/vscode-extension-caps-lock-state/master/docs/md_cursor_color.gif)
 
 ```json
 {
-  "caps-lock-state.editorCursor.foreground": "#00ff00",
-  "caps-lock-state.delay_time": 20
+  "caps-lock-state.display_method": "method_cursor_color",
+  "caps-lock-state.editorCursor.foreground": "#00ff00"
 }
 ```
 
-## Known Issues
+| Setting | Type | Default | Description |
+| --- | --- | --- | --- |
+| `caps-lock-state.editorCursor.foreground` | string | `#00ff00` | Cursor color when Caps Lock is ON. e.g. `#00ff00`, `red`, `rgba(0,255,0,1)` |
 
-### Cursor invisible in some input areas
+#### Known Issues
 
-The extension hides the native editor cursor by setting it to transparent and renders a custom cursor via the Decoration API. However, `editorCursor.foreground` is a global setting that affects all Monaco editor instances. The Decoration API can only render in file editors, so cursors in the following areas will be invisible:
+**Cursor invisible in some input areas:** The extension hides the native cursor by setting it to transparent and renders a custom cursor via the Decoration API. However, `editorCursor.foreground` is a global setting that affects all Monaco editor instances. The Decoration API can only render in file editors, so cursors in **Copilot Chat** input box, **SCM (Git)** commit message box, and **Search Editor** will be invisible. Cursors in Search bar, Settings page, Command Palette, and Terminal are not affected.
 
-- **Copilot Chat** input box
-- **SCM (Git)** commit message box
-- **Search Editor** (the editor view, not the search bar)
+**Cursor color not restored after uninstall:** A leftover `editorCursor.foreground` entry may remain in your settings. Open Command Palette (`Ctrl+Shift+P`) → **Preferences: Open User Settings (JSON)** and delete the `editorCursor.foreground` line inside `workbench.colorCustomizations`.
 
-Cursors in the following areas are **not affected**:
+### 2. Status Bar
 
-- Search bar, Settings page, Command Palette (HTML `<input>` elements)
-- Terminal (uses `terminalCursor.foreground`)
+Shows a text indicator in the status bar when Caps Lock is ON.
 
-### Cursor color not restored after uninstall
-
-After uninstalling the extension, a leftover `editorCursor.foreground` entry may remain in your settings. To fix:
-
-1. Open Command Palette (`Ctrl+Shift+P`) → **Preferences: Open User Settings (JSON)**
-2. Delete the `editorCursor.foreground` line inside `workbench.colorCustomizations`:
+![Status Bar](https://raw.githubusercontent.com/elling19/vscode-extension-caps-lock-state/master/docs/md_3.gif)
 
 ```json
-"workbench.colorCustomizations": {
-    "editorCursor.foreground": "#00ff00"  // ← delete this line
+{
+  "caps-lock-state.display_method": "method_status_bar",
+  "caps-lock-state.status_bar_text": "🔒 Caps Lock ON!"
+}
+```
+
+| Setting | Type | Default | Description |
+| --- | --- | --- | --- |
+| `caps-lock-state.status_bar_text` | string | `🔒 Caps Lock ON!` | Status bar text. e.g. `🔒 Caps Lock ON!`, `⚠ CAPS`, `[A]` |
+
+### 3. Background Color
+
+Highlights the current line with a background color when Caps Lock is ON.
+
+![Line Background](https://raw.githubusercontent.com/elling19/vscode-extension-caps-lock-state/master/docs/md_2.gif)
+
+```json
+{
+  "caps-lock-state.display_method": "method_background_color",
+  "caps-lock-state.background_color": "rgba(255, 0, 0, 0.7)"
+}
+```
+
+| Setting | Type | Default | Description |
+| --- | --- | --- | --- |
+| `caps-lock-state.background_color` | string | `rgba(255,0,0,0.7)` | Background color. e.g. `#ff0000b3`, `rgba(255,0,0,0.7)`, `red` |
+
+### 4. Gutter Icon
+
+Shows a lock icon in the editor gutter when Caps Lock is ON. No additional parameters.
+
+![Gutter Icon](https://raw.githubusercontent.com/elling19/vscode-extension-caps-lock-state/master/docs/md_5.gif)
+
+```json
+{
+  "caps-lock-state.display_method": "method_gutter_icon"
 }
 ```
 

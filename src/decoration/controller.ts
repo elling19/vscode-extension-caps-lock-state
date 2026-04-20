@@ -1,5 +1,4 @@
 import { CapsLockDecoration } from './decoration';
-import { CursorTextDecoration } from "./cursor_text_decoration";
 import { GutterIconDecoration } from "./gutter_icon_decoration";
 import { StatusBarDecoration } from "./status_bar_decoration";
 import { LineBackgroundColorDecoration } from "./line_background_decoration";
@@ -8,7 +7,6 @@ import { CursorColorDecoration } from "./cursor_color_decoration";
 
 class DisplayController {
     private createMethodMap: { [key: string]: new () => CapsLockDecoration } = {
-        'method_cursor_text': CursorTextDecoration,
         'method_gutter_icon': GutterIconDecoration,
         'method_status_bar': StatusBarDecoration,
         'method_background_color': LineBackgroundColorDecoration,
