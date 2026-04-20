@@ -6,6 +6,7 @@ import {
     needsCharacterRange,
     buildDecorationOptions,
     buildEolDecoration,
+    buildTabDecoration,
 } from './cursor_style';
 import { resolveThemeCursorColor } from './theme_color';
 
@@ -22,6 +23,7 @@ class CursorManager {
     private blinkTimer: ReturnType<typeof setInterval> | null = null;
     private blinkVisible = true;
     private active = false;
+    private writingConfig = false;
     private disposables: vscode.Disposable[] = [];
 
     isActivated(): boolean {
@@ -54,7 +56,7 @@ class CursorManager {
             this.defaultColor = resolveThemeCursorColor();
         }
 
-        // Step 3: 设透明隐藏真实光标
+        // Step 3: 设透明隐藏真实光标（仅写一次配置）
         this.hideRealCursor();
 
         // Step 4: 初始化装饰器（默认使用 defaultColor 即变量 A）
@@ -128,16 +130,21 @@ class CursorManager {
 
     // 隐藏 VS Code 内置光标（设置为透明色）
     private hideRealCursor(): void {
+        if (this.writingConfig) { console.log('[CursorManager] hideRealCursor skipped: writingConfig'); return; }
         const config = vscode.workspace.getConfiguration();
         const cc = { ...config.get<Record<string, any>>('workbench.colorCustomizations', {}) };
         if (cc['editorCursor.foreground'] === TRANSPARENT) { return; }
         cc['editorCursor.foreground'] = TRANSPARENT;
-        config.update('workbench.colorCustomizations', cc, vscode.ConfigurationTarget.Global);
+        this.writingConfig = true;
+        config.update('workbench.colorCustomizations', cc, vscode.ConfigurationTarget.Global).then(
+            () => { this.writingConfig = false; },
+            () => { this.writingConfig = false; }
+        );
     }
 
-    
     // 将光标颜色恢复为主题颜色
     private restoreRealCursor(): void {
+        if (this.writingConfig) { console.log('[CursorManager] restoreRealCursor skipped: writingConfig'); return; }
         const config = vscode.workspace.getConfiguration();
         const cc = { ...config.get<Record<string, any>>('workbench.colorCustomizations', {}) };
         if (this.userOverrideColor) {
@@ -145,7 +152,11 @@ class CursorManager {
         } else {
             delete cc['editorCursor.foreground'];
         }
-        config.update('workbench.colorCustomizations', cc, vscode.ConfigurationTarget.Global);
+        this.writingConfig = true;
+        config.update('workbench.colorCustomizations', cc, vscode.ConfigurationTarget.Global).then(
+            () => { this.writingConfig = false; },
+            () => { this.writingConfig = false; }
+        );
     }
 
 
@@ -176,6 +187,13 @@ class CursorManager {
             }),
             vscode.window.onDidChangeActiveTextEditor(() => {
                 if (!this.active) { return; }
+                this.hideRealCursor();
+                this.resetBlinkCycle();
+                this.render();
+            }),
+            vscode.window.onDidChangeTextEditorOptions(e => {
+                if (!this.active) { return; }
+                this.resetBlinkCycle();
                 this.render();
             }),
             vscode.window.onDidChangeVisibleTextEditors(() => {
@@ -183,7 +201,8 @@ class CursorManager {
                 this.render();
             }),
             vscode.workspace.onDidChangeConfiguration(e => {
-                if (e.affectsConfiguration('editor.cursorBlinking') && this.active) {
+                if (!this.active) { return; }
+                if (e.affectsConfiguration('editor.cursorBlinking')) {
                     this.startBlink();
                     this.render();
                 }
@@ -257,9 +276,13 @@ class CursorManager {
                 items.push({ range: new vscode.Range(pos, pos) });
                 continue;
             }
-            const lineLen = editor.document.lineAt(pos.line).text.length;
-            if (pos.character < lineLen) {
-                items.push({ range: new vscode.Range(pos, pos.translate(0, 1)) });
+            const lineText = editor.document.lineAt(pos.line).text;
+            if (pos.character < lineText.length) {
+                if (lineText[pos.character] === '\t') {
+                    items.push(buildTabDecoration(pos, this.color, style));
+                } else {
+                    items.push({ range: new vscode.Range(pos, pos.translate(0, 1)) });
+                }
             } else {
                 items.push(buildEolDecoration(pos, this.color, style));
             }
