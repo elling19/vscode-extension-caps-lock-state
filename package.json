@@ -28,6 +28,10 @@
             {
                 "command": "caps-lock-config",
                 "title": "caps lock config"
+            },
+            {
+                "command": "caps-lock-state.toggle",
+                "title": "Caps Lock State: Toggle Feature"
             }
         ],
         "configuration": {
@@ -45,13 +49,11 @@
                     "enum": [
                         "method_cursor_color",
                         "method_background_color",
-                        "method_status_bar",
                         "method_gutter_icon"
                     ],
                     "enumDescriptions": [
                         "Cursor Color: Change the editor cursor color when Caps Lock is ON. Configure with `editorCursor.foreground` below.",
                         "Background Color: Highlight the current line with a background color when Caps Lock is ON. Configure with `background_color` below.",
-                        "Status Bar: Show a text indicator in the status bar when Caps Lock is ON. Configure with `status_bar_text` below.",
                         "Gutter Icon: Show a lock icon in the editor gutter when Caps Lock is ON. No additional configuration needed."
                     ],
                     "markdownDescription": "Choose how Caps Lock state is indicated in the editor.",
@@ -63,17 +65,11 @@
                     "markdownDescription": "Only for `method_cursor_color`. The cursor color when Caps Lock is ON. Examples: `#00ff00`, `red`, `rgba(0, 255, 0, 1)`",
                     "order": 2
                 },
-                "caps-lock-state.status_bar_text": {
-                    "type": "string",
-                    "default": "🔒 Caps Lock ON!",
-                    "markdownDescription": "Only for `method_status_bar`. The text shown in the status bar when Caps Lock is ON. Examples: `🔒 Caps Lock ON!`, `⚠ CAPS`, `[A]`",
-                    "order": 3
-                },
                 "caps-lock-state.background_color": {
                     "type": "string",
                     "default": "rgba(255, 0, 0, 0.7)",
                     "markdownDescription": "Only for `method_background_color`. The background color of the current line when Caps Lock is ON. Examples: `rgba(255,0,0,0.7)`, `#ff0000b3`, `red`",
-                    "order": 4
+                    "order": 3
                 }
             }
         }

@@ -3,7 +3,6 @@ const configKey = {
     delay_time: "delay_time",
     display_method: "display_method",
     background_color: "background_color",
-    status_bar_text: "status_bar_text",
     "editorCursor.foreground": "editorCursor.foreground",
 };
 
@@ -11,7 +10,6 @@ const configDefaultValue = {
     delay_time: 20,
     display_method: "method_cursor_color",
     background_color: "rgba(255,0,0,0.7)",
-    status_bar_text: "🔒 Caps Lock ON!",
     "editorCursor.foreground": "#00ff00",
 };
 
