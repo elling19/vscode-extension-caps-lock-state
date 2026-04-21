@@ -28,10 +28,6 @@
             {
                 "command": "caps-lock-config",
                 "title": "caps lock config"
-            },
-            {
-                "command": "caps-lock-state.toggle",
-                "title": "Caps Lock State: Toggle Feature"
             }
         ],
         "configuration": {

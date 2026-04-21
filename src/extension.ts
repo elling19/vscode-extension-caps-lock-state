@@ -69,8 +69,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	let capsLockState: number | null = null;
 	let displayInitState: DisplayInitState = 'waiting';
 	let featureEnabled = true;
-	const DOUBLE_TAP_WINDOW_MS = 500;
-	let lastCapsStateChangeAt = 0;
 	/** toggle 关闭后，等待用户回到编辑器时自动恢复 */
 	let pendingRestore = false;
 
@@ -85,15 +83,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	}
 
 	/**
-	 * 统一初始化入口：
-	 * - 若真实光标已透明，则启动时立刻接管并按 OFF 渲染；
-	 * - 否则等首次收到 CapsLock 状态后再接管。
+	 * 统一初始化入口：等首次收到 CapsLock 状态后再接管。
 	 */
 	function ensureDisplayInitialized(): void {
 		if (!featureEnabled || displayInitState === 'initialized') {
 			return;
 		}
-		if (!cursorManager.isRealCursorTransparent() && capsLockState === null) {
+		if (capsLockState === null) {
 			return;
 		}
 		displayInitState = 'initialized';
@@ -115,16 +111,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	function handleCapsDoubleTap(now: number): void {
-		if (lastCapsStateChangeAt > 0 && (now - lastCapsStateChangeAt) <= DOUBLE_TAP_WINDOW_MS) {
-			lastCapsStateChangeAt = 0;
-			toggleFeature();
-			return;
-		}
-		lastCapsStateChangeAt = now;
-	}
-
-	// 注册 toggle 命令（点击灯或快捷键触发）
+	// 注册内部 toggle 命令（仅由 Lamp 点击触发）
 	context.subscriptions.push(
 		vscode.commands.registerCommand('caps-lock-state.toggle', () => {
 			toggleFeature();
@@ -133,7 +120,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	const delayTime: number = vscode.workspace.getConfiguration().get(`${extName}.${configKey.delay_time}`, configDefaultValue.delay_time);
 	// listen config change
-	vscode.workspace.onDidChangeConfiguration((event) => {
+	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration(`${extName}.${configKey.delay_time}`)) {
 			vscode.window.showInformationMessage('Your changes require a VSCode restart to take effect.', 'Restart').then(choice => {
                 if (choice === 'Restart') {
@@ -146,7 +133,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				displayController.updateAll();
 			}
 		}
-	});
+	}));
 	// get caps lock state from caps_lock_listener executable file.
 	const extensionPath = context.extensionPath;
 	let executablePath;
@@ -176,9 +163,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 		const previousCapsLockState = capsLockState;
 		capsLockState = nextCapsLockState;
-		if (previousCapsLockState !== null && previousCapsLockState !== nextCapsLockState) {
-			handleCapsDoubleTap(Date.now());
-		}
 		ensureDisplayInitialized();
 		lamp.setCapsLockState(capsLockState === 1);
 		if (!featureEnabled) { return; }
@@ -198,7 +182,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	});
 
 	// 窗口焦点监听：cursor_color 模式下，失焦时挂起（恢复真实光标），聚焦时恢复
-	vscode.window.onDidChangeWindowState((state) => {
+	context.subscriptions.push(vscode.window.onDidChangeWindowState((state) => {
 		if (!featureEnabled || currentDisplayMethod !== 'method_cursor_color') { return; }
 		if (state.focused) {
 			if (displayInitState === 'initialized') {
@@ -207,10 +191,10 @@ export async function activate(context: vscode.ExtensionContext) {
 		} else {
 			displayController.removeAll();
 		}
-	});
+	}));
 
 	// when cursor position changed / user returns to editor
-	vscode.window.onDidChangeTextEditorSelection(() => {
+	context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection(() => {
 		// 用户从 Git/Chat/Terminal 面板回到编辑器，自动恢复 cursor_color
 		if (pendingRestore) {
 			pendingRestore = false;
@@ -227,7 +211,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		} else {
 			displayController.hide();
 		}
-	});
+	}));
 }
 
 export function deactivate() {

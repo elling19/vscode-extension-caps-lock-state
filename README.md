@@ -19,16 +19,21 @@ Open **Settings** (`Ctrl+,`) and search for **Caps Lock State** to customize:
 | `caps-lock-state.editorCursor.foreground` | string | `#00ff00` | Cursor color when Caps Lock is ON. |
 
 
+## How It Works
+it writes / restores the value of `editorCursor.foreground` inside `workbench.colorCustomizations`:
+
+| Caps Lock state | Action |
+| --- | --- |
+| ON  | Write `editorCursor.foreground = <your custom color>` |
+| OFF | Restore the original value (or remove the key, letting the active theme decide) |
+
+
 #### Known Issues
 
-**Cursor invisible in some input areas:** The extension hides the native cursor by setting it to transparent and renders a custom cursor via the Decoration API. However, `editorCursor.foreground` is a global setting that affects all Monaco editor instances. The Decoration API can only render in file editors, so cursors in **Copilot Chat** input box, **SCM (Git)** commit message box, and **Search Editor** will be invisible. Cursors in Search bar, Settings page, Command Palette, and Terminal are not affected.
-
-How to handle:
-- Use **double-tap CapsLock** to quickly disable the extension before typing in those input areas.
-- Or click the **Lamp** status bar icon to toggle the feature manually.
-
-
-**Cursor color not restored after uninstall:** A leftover `editorCursor.foreground` entry may remain in your settings. Open Command Palette (`Ctrl+Shift+P`) → **Preferences: Open User Settings (JSON)** and delete the `editorCursor.foreground` line inside `workbench.colorCustomizations`.
+`editorCursor.foreground` may remain in your settings after disable/uninstall.
+Open Command Palette (`Ctrl+Shift+P`) → **Preferences: Open User Settings (JSON)**
+and delete the `editorCursor.foreground` line inside
+`workbench.colorCustomizations` if needed.
 
 ## Legacy Settings
 
