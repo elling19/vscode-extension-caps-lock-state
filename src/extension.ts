@@ -69,6 +69,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	let capsLockState: number | null = null;
 	let displayInitState: DisplayInitState = 'waiting';
 	let featureEnabled = true;
+	const DOUBLE_TAP_WINDOW_MS = 500;
+	let lastCapsStateChangeAt = 0;
 	/** toggle 关闭后，等待用户回到编辑器时自动恢复 */
 	let pendingRestore = false;
 
@@ -98,21 +100,34 @@ export async function activate(context: vscode.ExtensionContext) {
 		activateDisplay();
 	}
 
+	function toggleFeature(): void {
+		featureEnabled = !featureEnabled;
+		lamp.setEnabled(featureEnabled);
+		if (featureEnabled) {
+			pendingRestore = false;
+			if (displayInitState === 'initialized') {
+				activateDisplay();
+			}
+		} else {
+			// cursor_color 模式下标记自动恢复
+			pendingRestore = currentDisplayMethod === 'method_cursor_color';
+			displayController.removeAll();
+		}
+	}
+
+	function handleCapsDoubleTap(now: number): void {
+		if (lastCapsStateChangeAt > 0 && (now - lastCapsStateChangeAt) <= DOUBLE_TAP_WINDOW_MS) {
+			lastCapsStateChangeAt = 0;
+			toggleFeature();
+			return;
+		}
+		lastCapsStateChangeAt = now;
+	}
+
 	// 注册 toggle 命令（点击灯或快捷键触发）
 	context.subscriptions.push(
 		vscode.commands.registerCommand('caps-lock-state.toggle', () => {
-			featureEnabled = !featureEnabled;
-			lamp.setEnabled(featureEnabled);
-			if (featureEnabled) {
-				pendingRestore = false;
-				if (displayInitState === 'initialized') {
-					activateDisplay();
-				}
-			} else {
-				// cursor_color 模式下标记自动恢复
-				pendingRestore = currentDisplayMethod === 'method_cursor_color';
-				displayController.removeAll();
-			}
+			toggleFeature();
 		})
 	);
 
@@ -159,7 +174,11 @@ export async function activate(context: vscode.ExtensionContext) {
 		if (Number.isNaN(nextCapsLockState)) {
 			return;
 		}
+		const previousCapsLockState = capsLockState;
 		capsLockState = nextCapsLockState;
+		if (previousCapsLockState !== null && previousCapsLockState !== nextCapsLockState) {
+			handleCapsDoubleTap(Date.now());
+		}
 		ensureDisplayInitialized();
 		lamp.setCapsLockState(capsLockState === 1);
 		if (!featureEnabled) { return; }
