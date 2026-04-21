@@ -6,12 +6,12 @@ import {
     needsCharacterRange,
     buildDecorationOptions,
     buildEolDecoration,
-    buildTabDecoration,
 } from './cursor_style';
 import { resolveThemeCursorColor } from './theme_color';
 
 const TRANSPARENT = '#00000000';
-const BLINK_INTERVAL = 530;
+const BLINK_ON_MS = 530;
+const BLINK_OFF_MS = 530;
 
 class CursorManager {
     private decorationTypes: Map<CursorStyleName, vscode.TextEditorDecorationType> = new Map();
@@ -20,7 +20,8 @@ class CursorManager {
     private defaultColor = '';
     /** 用户在 colorCustomizations 中手动设置的颜色（非本插件写入） */
     private userOverrideColor: string | null = null;
-    private blinkTimer: ReturnType<typeof setInterval> | null = null;
+    private blinkTimer: ReturnType<typeof setTimeout> | null = null;
+    private blinkCycleStart = 0;
     private blinkVisible = true;
     private active = false;
     private writingConfig = false;
@@ -30,11 +31,21 @@ class CursorManager {
         return this.active;
     }
 
+    isRealCursorTransparent(): boolean {
+        const config = vscode.workspace.getConfiguration();
+        const colorCustomizations = config.get<Record<string, unknown>>('workbench.colorCustomizations', {});
+        const cursorForeground = colorCustomizations['editorCursor.foreground'];
+        if (typeof cursorForeground !== 'string') {
+            return false;
+        }
+        return cursorForeground.trim().toLowerCase() === TRANSPARENT;
+    }
+
     /**
      * 激活光标管理器：
      * 1. 读取用户自定义颜色（如果有）
      * 2. 清除自定义 → 读取主题光标颜色 → 存为 defaultColor（变量 A）
-     * 3. 写入透明色隐藏真实光标
+      * 3. 写入透明色隐藏真实光标
      * 4. 用装饰器接管光标渲染
      */
     activate(): void {
@@ -47,7 +58,7 @@ class CursorManager {
         const existingColor = cc['editorCursor.foreground'] || null;
 
         // 如果有非透明的用户自定义颜色，保存下来
-        if (existingColor && existingColor !== TRANSPARENT) {
+        if (existingColor && typeof existingColor === 'string' && existingColor.trim().toLowerCase() !== TRANSPARENT) {
             this.userOverrideColor = existingColor;
             this.defaultColor = existingColor;
         } else {
@@ -137,7 +148,7 @@ class CursorManager {
         cc['editorCursor.foreground'] = TRANSPARENT;
         this.writingConfig = true;
         config.update('workbench.colorCustomizations', cc, vscode.ConfigurationTarget.Global).then(
-            () => { this.writingConfig = false; },
+            () => { this.writingConfig = false; this.render(); },
             () => { this.writingConfig = false; }
         );
     }
@@ -217,32 +228,50 @@ class CursorManager {
     // 光标闪烁控制
     private startBlink(): void {
         this.stopBlink();
-        if (readCursorBlinking() === 'solid') { return; }
+        if (readCursorBlinking() === 'solid') {
+            this.blinkVisible = true;
+            return;
+        }
+        this.blinkCycleStart = Date.now();
         this.blinkVisible = true;
-        this.blinkTimer = setInterval(() => {
-            this.blinkVisible = !this.blinkVisible;
-            this.render();
-        }, BLINK_INTERVAL);
+        this.scheduleNextBlinkEdge();
     }
 
     // 重置闪烁周期（如光标位置变化时）
     private resetBlinkCycle(): void {
         if (this.blinkTimer === null) { return; }
-        clearInterval(this.blinkTimer);
+        clearTimeout(this.blinkTimer);
+        this.blinkCycleStart = Date.now();
         this.blinkVisible = true;
-        this.blinkTimer = setInterval(() => {
-            this.blinkVisible = !this.blinkVisible;
-            this.render();
-        }, BLINK_INTERVAL);
+        this.scheduleNextBlinkEdge();
     }
 
     // 停止闪烁
     private stopBlink(): void {
         if (this.blinkTimer !== null) {
-            clearInterval(this.blinkTimer);
+            clearTimeout(this.blinkTimer);
             this.blinkTimer = null;
         }
         this.blinkVisible = true;
+    }
+
+    private scheduleNextBlinkEdge(): void {
+        if (!this.active) { return; }
+
+        const cycleMs = BLINK_ON_MS + BLINK_OFF_MS;
+        const elapsedMs = Date.now() - this.blinkCycleStart;
+        const phaseMs = ((elapsedMs % cycleMs) + cycleMs) % cycleMs;
+        const shouldBeVisible = phaseMs < BLINK_ON_MS;
+
+        if (this.blinkVisible !== shouldBeVisible) {
+            this.blinkVisible = shouldBeVisible;
+            this.render();
+        }
+
+        const msUntilEdge = shouldBeVisible ? (BLINK_ON_MS - phaseMs) : (cycleMs - phaseMs);
+        this.blinkTimer = setTimeout(() => {
+            this.scheduleNextBlinkEdge();
+        }, Math.max(1, msUntilEdge));
     }
 
     // 渲染光标装饰
@@ -278,11 +307,7 @@ class CursorManager {
             }
             const lineText = editor.document.lineAt(pos.line).text;
             if (pos.character < lineText.length) {
-                if (lineText[pos.character] === '\t') {
-                    items.push(buildTabDecoration(pos, this.color, style));
-                } else {
-                    items.push({ range: new vscode.Range(pos, pos.translate(0, 1)) });
-                }
+                items.push({ range: new vscode.Range(pos, pos.translate(0, 1)) });
             } else {
                 items.push(buildEolDecoration(pos, this.color, style));
             }

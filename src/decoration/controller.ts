@@ -33,7 +33,6 @@ class DisplayController {
     addOrUpdateByDisplay(display: CapsLockDecoration): void {
         const methodType = this.getDisplayType(display);
         this.methodMap.set(methodType, display);
-        this.show();
     }
 
     updateAll(): void {

@@ -48,39 +48,6 @@ export function buildDecorationOptions(color: string, style: CursorStyleName): v
 
 
 /**
- * 制表符Tab光标装饰（使用before附加组件）
- * @param pos 光标位置
- * @param color 装饰颜色
- * @param style 光标样式
- * @returns 装饰选项
- */
-export function buildTabDecoration(
-    pos: vscode.Position, color: string, style: CursorStyleName
-): vscode.DecorationOptions {
-    let before: vscode.ThemableDecorationAttachmentRenderOptions;
-    switch (style) {
-        case 'block':
-            before = { contentText: '\u00a0', backgroundColor: color };
-            break;
-        case 'block-outline':
-            before = { contentText: '\u00a0', border: `1px solid ${color}` };
-            break;
-        case 'underline':
-            before = { contentText: '\u00a0', textDecoration: `underline ${color} 2px` };
-            break;
-        case 'underline-thin':
-            before = { contentText: '\u00a0', textDecoration: `underline ${color} 1px` };
-            break;
-        default:
-            before = {};
-    }
-    return {
-        range: new vscode.Range(pos, pos),
-        renderOptions: { before },
-    };
-}
-
-/**
  * 构建行尾光标装饰（使用after附加组件）
  * @param pos 光标位置
  * @param color 装饰颜色

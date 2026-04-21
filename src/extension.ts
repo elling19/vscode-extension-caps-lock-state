@@ -3,6 +3,7 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { chmodSync, statSync } from 'fs';
 import { extName, configKey, configDefaultValue, setExtensionPath } from './config';
+import { cursorManager } from './cursor';
 import { displayController } from './decoration';
 import { Lamp } from './decoration/lamp';
 
@@ -14,7 +15,6 @@ function ensureExecutablePermission(filePath: string): void {
 	if (process.platform === 'win32') {
 		return; // Windows 不需要设置执行权限
 	}
-	
 	try {
 		const stats = statSync(filePath);
 		const currentMode = stats.mode;
@@ -33,25 +33,44 @@ export async function activate(context: vscode.ExtensionContext) {
 	// 初始化扩展路径
 	setExtensionPath(context.extensionPath);
 
-	// 如果当前不使用 cursor_color 模式，清理可能遗留的透明光标
-	const displayMethod: string = vscode.workspace.getConfiguration().get(`${extName}.${configKey.display_method}`, configDefaultValue.display_method);
-	if (displayMethod !== 'method_cursor_color') {
-		const config = vscode.workspace.getConfiguration();
-		const cc = { ...config.get<Record<string, any>>('workbench.colorCustomizations', {}) };
-		if (cc['editorCursor.foreground'] === '#00000000') {
-			delete cc['editorCursor.foreground'];
-			await config.update('workbench.colorCustomizations', cc, vscode.ConfigurationTarget.Global);
+	// 兼容旧版本: display_method 已废弃，若用户仍配置旧方法则回退到默认并提示
+	const extConfig = vscode.workspace.getConfiguration(extName);
+	const legacyDisplayMethod = extConfig.get<string>(configKey.display_method);
+	if (legacyDisplayMethod && legacyDisplayMethod !== configDefaultValue.display_method) {
+		const inspect = extConfig.inspect<string>(configKey.display_method);
+		if (inspect?.globalValue !== undefined) {
+			await extConfig.update(configKey.display_method, configDefaultValue.display_method, vscode.ConfigurationTarget.Global);
 		}
+		if (inspect?.workspaceValue !== undefined) {
+			await extConfig.update(configKey.display_method, configDefaultValue.display_method, vscode.ConfigurationTarget.Workspace);
+		}
+		if (inspect?.workspaceFolderValue !== undefined && vscode.workspace.workspaceFolders) {
+			for (const folder of vscode.workspace.workspaceFolders) {
+				const folderConfig = vscode.workspace.getConfiguration(extName, folder.uri);
+				const folderMethod = folderConfig.get<string>(configKey.display_method);
+				if (folderMethod && folderMethod !== configDefaultValue.display_method) {
+					await folderConfig.update(configKey.display_method, configDefaultValue.display_method, vscode.ConfigurationTarget.WorkspaceFolder);
+				}
+			}
+		}
+		vscode.window.showWarningMessage(
+			`caps-lock-state.display_method (${legacyDisplayMethod}) has been removed. The extension now uses method_cursor_color by default.`
+		);
 	}
+
+	const currentDisplayMethod = configDefaultValue.display_method;
 
 	// 创建 Lamp 指示灯（始终显示在 status bar，所有模式通用）
 	const lamp = new Lamp();
 	context.subscriptions.push(lamp);
 
+	type DisplayInitState = 'waiting' | 'initialized';
+
+	let capsLockState: number | null = null;
+	let displayInitState: DisplayInitState = 'waiting';
 	let featureEnabled = true;
 	/** toggle 关闭后，等待用户回到编辑器时自动恢复 */
 	let pendingRestore = false;
-	let currentDisplayMethod = displayMethod;
 
 	/** 激活 cursor_color 效果 */
 	function activateDisplay(): void {
@@ -63,6 +82,22 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
+	/**
+	 * 统一初始化入口：
+	 * - 若真实光标已透明，则启动时立刻接管并按 OFF 渲染；
+	 * - 否则等首次收到 CapsLock 状态后再接管。
+	 */
+	function ensureDisplayInitialized(): void {
+		if (!featureEnabled || displayInitState === 'initialized') {
+			return;
+		}
+		if (!cursorManager.isRealCursorTransparent() && capsLockState === null) {
+			return;
+		}
+		displayInitState = 'initialized';
+		activateDisplay();
+	}
+
 	// 注册 toggle 命令（点击灯或快捷键触发）
 	context.subscriptions.push(
 		vscode.commands.registerCommand('caps-lock-state.toggle', () => {
@@ -70,7 +105,9 @@ export async function activate(context: vscode.ExtensionContext) {
 			lamp.setEnabled(featureEnabled);
 			if (featureEnabled) {
 				pendingRestore = false;
-				activateDisplay();
+				if (displayInitState === 'initialized') {
+					activateDisplay();
+				}
 			} else {
 				// cursor_color 模式下标记自动恢复
 				pendingRestore = currentDisplayMethod === 'method_cursor_color';
@@ -79,17 +116,10 @@ export async function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	displayController.addOrUpdateByDisplayMethodName(currentDisplayMethod);
 	const delayTime: number = vscode.workspace.getConfiguration().get(`${extName}.${configKey.delay_time}`, configDefaultValue.delay_time);
 	// listen config change
 	vscode.workspace.onDidChangeConfiguration((event) => {
-		if (event.affectsConfiguration(`${extName}.${configKey.display_method}`)) {
-			currentDisplayMethod = vscode.workspace.getConfiguration().get(`${extName}.${configKey.display_method}`, configDefaultValue.display_method);
-			if (featureEnabled) {
-				displayController.removeAll();
-				displayController.addOrUpdateByDisplayMethodName(currentDisplayMethod);
-			}
-		} else if (event.affectsConfiguration(`${extName}.${configKey.delay_time}`)) {
+		if (event.affectsConfiguration(`${extName}.${configKey.delay_time}`)) {
 			vscode.window.showInformationMessage('Your changes require a VSCode restart to take effect.', 'Restart').then(choice => {
                 if (choice === 'Restart') {
                     vscode.commands.executeCommand('workbench.action.reloadWindow');
@@ -103,7 +133,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 	// get caps lock state from caps_lock_listener executable file.
-	let capsLockState = 0;
 	const extensionPath = context.extensionPath;
 	let executablePath;
 	const args = [];
@@ -122,12 +151,19 @@ export async function activate(context: vscode.ExtensionContext) {
 	
 	// 确保可执行文件有执行权限（修复 .vsix 安装后权限丢失的问题）
 	ensureExecutablePermission(executablePath);
+	ensureDisplayInitialized();
 	
 	const child = spawn(executablePath, args);
 	child.stdout.on('data', (data) => {
-		capsLockState = parseInt(data.toString().trim());
+		const nextCapsLockState = parseInt(data.toString().trim(), 10);
+		if (Number.isNaN(nextCapsLockState)) {
+			return;
+		}
+		capsLockState = nextCapsLockState;
+		ensureDisplayInitialized();
 		lamp.setCapsLockState(capsLockState === 1);
 		if (!featureEnabled) { return; }
+		if (displayInitState !== 'initialized') { return; }
 		if (capsLockState === 1) {
 			displayController.show();
 		} else {
@@ -146,7 +182,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.window.onDidChangeWindowState((state) => {
 		if (!featureEnabled || currentDisplayMethod !== 'method_cursor_color') { return; }
 		if (state.focused) {
-			activateDisplay();
+			if (displayInitState === 'initialized') {
+				activateDisplay();
+			}
 		} else {
 			displayController.removeAll();
 		}
@@ -159,10 +197,12 @@ export async function activate(context: vscode.ExtensionContext) {
 			pendingRestore = false;
 			featureEnabled = true;
 			lamp.setEnabled(true);
-			activateDisplay();
+			if (displayInitState === 'initialized') {
+				activateDisplay();
+			}
 			return;
 		}
-		if (!featureEnabled) { return; }
+		if (!featureEnabled || displayInitState !== 'initialized') { return; }
 		if (capsLockState === 1) {
 			displayController.show();
 		} else {
