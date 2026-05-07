@@ -43,19 +43,15 @@ class Lamp implements vscode.Disposable {
         this.animating = true;
         const targetColor = this.capsLockOn ? this.getCapsColor() : '#808080';
 
-        // 第1帧：大圆闪烁
-        this.statusBarItem.text = '$(circle-large-filled)';
+        // 第1帧：先显示旧状态图标
+        this.statusBarItem.text = this.capsLockOn ? '$(unlock)' : '$(lock)';
         this.statusBarItem.color = targetColor;
         this.statusBarItem.backgroundColor = undefined;
 
         setTimeout(() => {
-            // 第2帧：空心过渡
-            this.statusBarItem.text = '$(circle-large-outline)';
-            setTimeout(() => {
-                // 第3帧：回到实心小圆
-                this.animating = false;
-                this.update();
-            }, 120);
+            // 第2帧：切换到目标状态（只切换一次）
+            this.animating = false;
+            this.update();
         }, 150);
     }
 
@@ -69,14 +65,14 @@ class Lamp implements vscode.Disposable {
                 ? 'Caps Lock: ON (feature disabled, click to enable)'
                 : 'Caps Lock: OFF (feature disabled, click to enable)';
         } else if (this.capsLockOn) {
-            // CapsLock ON：实心，用户设置的光标颜色
-            this.statusBarItem.text = '$(circle-filled)';
+            // CapsLock ON：锁定图标，用户设置的光标颜色
+            this.statusBarItem.text = '$(lock)';
             this.statusBarItem.color = this.getCapsColor();
             this.statusBarItem.backgroundColor = undefined;
             this.statusBarItem.tooltip = 'Caps Lock: ON (click to disable)';
         } else {
-            // CapsLock OFF：实心，灰色
-            this.statusBarItem.text = '$(circle-filled)';
+            // CapsLock OFF：解锁图标，灰色
+            this.statusBarItem.text = '$(unlock)';
             this.statusBarItem.color = '#808080';
             this.statusBarItem.backgroundColor = undefined;
             this.statusBarItem.tooltip = 'Caps Lock: OFF';
