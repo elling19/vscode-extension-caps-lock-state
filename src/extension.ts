@@ -33,6 +33,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	// 初始化扩展路径
 	setExtensionPath(context.extensionPath);
 
+	// 清理版本升级时的旧配置
+	await cursorManager.cleanupLegacyConfig();
+
 	// 兼容旧版本: display_method 已废弃，若用户仍配置旧方法则回退到默认并提示
 	const extConfig = vscode.workspace.getConfiguration(extName);
 	const legacyDisplayMethod = extConfig.get<string>(configKey.display_method);

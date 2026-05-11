@@ -33,6 +33,25 @@ class CursorManager {
     this.currentWritten = this.userOverrideColor;
   }
 
+  /**
+   * 初始化时清除旧配置，确保版本升级时插件完全接管光标颜色
+   */
+  async cleanupLegacyConfig(): Promise<void> {
+    const config = vscode.workspace.getConfiguration();
+    const cc = { ...config.get<Record<string, unknown>>(CC_KEY, {}) };
+
+    // 如果存在 editorCursor.foreground，删除它
+    if (CURSOR_KEY in cc) {
+      delete cc[CURSOR_KEY];
+      try {
+        await config.update(CC_KEY, cc, vscode.ConfigurationTarget.Global);
+        console.log("Cleaned up legacy editorCursor.foreground configuration");
+      } catch (error) {
+        console.error("Failed to clean up legacy configuration:", error);
+      }
+    }
+  }
+
   /** CapsLock ON：切换为自定义颜色 */
   setColor(color: string): void {
     if (!this.active) {
